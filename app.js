@@ -62,16 +62,35 @@ function formatDate(iso) {
   });
 }
 
+// === Platform Detection ===
+function detectPlatform(url) {
+  if (/instagram\.com/i.test(url)) return 'instagram';
+  if (/youtube\.com\/shorts|youtu\.be/i.test(url)) return 'youtube';
+  return 'unknown';
+}
+
 function extractReelShortcode(url) {
-  // Matches /reel/XXXXX or /reels/XXXXX or /p/XXXXX
   const match = url.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/);
   return match ? match[1] : null;
 }
 
+function extractYoutubeId(url) {
+  // Matches youtube.com/shorts/VIDEO_ID or youtu.be/VIDEO_ID
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]+)/);
+  if (shortsMatch) return shortsMatch[1];
+  const shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  return null;
+}
+
 function getEmbedUrl(url) {
-  const shortcode = extractReelShortcode(url);
-  if (shortcode) {
-    return `https://www.instagram.com/reel/${shortcode}/embed/`;
+  const platform = detectPlatform(url);
+  if (platform === 'instagram') {
+    const shortcode = extractReelShortcode(url);
+    if (shortcode) return `https://www.instagram.com/reel/${shortcode}/embed/`;
+  } else if (platform === 'youtube') {
+    const videoId = extractYoutubeId(url);
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
   }
   return null;
 }
@@ -79,7 +98,31 @@ function getEmbedUrl(url) {
 function createEmbedIframe(url, width, height) {
   const embedUrl = getEmbedUrl(url);
   if (!embedUrl) return null;
-  return `<iframe src="${embedUrl}" width="${width}" height="${height}" frameborder="0" scrolling="no" allowtransparency="true" loading="lazy" style="border:none;overflow:hidden;border-radius:8px;"></iframe>`;
+  const platform = detectPlatform(url);
+  const allow = platform === 'youtube'
+    ? 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+    : '';
+  return `<iframe src="${embedUrl}" width="${width}" height="${height}" frameborder="0" scrolling="no" allowtransparency="true" loading="lazy" ${allow ? `allow="${allow}" allowfullscreen` : ''} style="border:none;overflow:hidden;border-radius:8px;"></iframe>`;
+}
+
+function getPlatformBadge(url) {
+  const platform = detectPlatform(url);
+  if (platform === 'instagram') {
+    return `<span class="platform-badge platform-ig" title="Instagram Reel">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+    </span>`;
+  } else if (platform === 'youtube') {
+    return `<span class="platform-badge platform-yt" title="YouTube Short">
+      <svg width="14" height="10" viewBox="0 0 24 17" fill="currentColor"><path d="M23.498 2.186a3.016 3.016 0 00-2.122-2.136C19.505 0 12 0 12 0S4.495 0 2.624.05A3.016 3.016 0 00.502 2.186C0 4.075 0 8.5 0 8.5s0 4.425.502 6.314a3.016 3.016 0 002.122 2.136C4.495 17 12 17 12 17s7.505 0 9.376-.05a3.016 3.016 0 002.122-2.136C24 12.925 24 8.5 24 8.5s0-4.425-.502-6.314zM9.545 12.136V4.864L15.818 8.5l-6.273 3.636z"/></svg>
+    </span>`;
+  }
+  return '';
+}
+
+function getOpenLabel(url) {
+  const platform = detectPlatform(url);
+  if (platform === 'youtube') return 'Open in YouTube';
+  return 'Open in Instagram';
 }
 
 function getCategoryById(id) {
@@ -145,7 +188,7 @@ function renderReels() {
   const filtered = getFilteredReels();
 
   // Update count
-  reelCountEl.textContent = `${filtered.length} reel${filtered.length !== 1 ? 's' : ''}`;
+  reelCountEl.textContent = `${filtered.length} clip${filtered.length !== 1 ? 's' : ''}`;
 
   // Clear grid (keep empty state)
   reelsGrid.querySelectorAll('.reel-card').forEach(c => c.remove());
@@ -174,10 +217,11 @@ function renderReels() {
           <span>No preview</span>
         </div>`;
 
-    const title = reel.title || reel.authorName || 'Untitled Reel';
+    const title = reel.title || reel.authorName || 'Untitled';
+    const platformBadge = getPlatformBadge(reel.url);
 
     card.innerHTML = `
-      <div class="reel-card-thumbnail">${thumbnail}</div>
+      <div class="reel-card-thumbnail">${thumbnail}${platformBadge}</div>
       <div class="reel-card-info">
         <div class="reel-card-title" title="${title}">${title}</div>
         <div class="reel-card-meta">
@@ -239,8 +283,10 @@ function openDetail(id) {
   const reel = reels.find(r => r.id === id);
   if (!reel) return;
 
-  detailTitle.textContent = reel.title || reel.authorName || 'Reel Details';
+  detailTitle.textContent = reel.title || reel.authorName || 'Details';
   detailOpenLink.href = reel.url;
+  detailOpenLink.textContent = '';
+  detailOpenLink.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg> ${getOpenLabel(reel.url)}`;
 
   let html = '';
   const detailEmbed = createEmbedIframe(reel.url, '100%', '480');
@@ -326,7 +372,7 @@ fetchPreviewBtn.addEventListener('click', () => {
 
   previewArea.innerHTML = '<div class="preview-loading">Loading preview...</div>';
   if (!showEmbedPreview(url)) {
-    previewArea.innerHTML = '<div class="preview-error">Invalid Instagram reel URL. Check the link and try again.</div>';
+    previewArea.innerHTML = '<div class="preview-error">Invalid URL. Please use an Instagram Reel or YouTube Shorts link.</div>';
   }
 });
 
@@ -334,7 +380,7 @@ fetchPreviewBtn.addEventListener('click', () => {
 reelUrlInput.addEventListener('paste', () => {
   setTimeout(() => {
     const url = reelUrlInput.value.trim();
-    if (url && url.includes('instagram.com')) {
+    if (url && (url.includes('instagram.com') || url.includes('youtube.com/shorts') || url.includes('youtu.be'))) {
       fetchPreviewBtn.click();
     }
   }, 100);
@@ -443,11 +489,11 @@ function handleShareTarget() {
   const sharedText = params.get('text') || '';
   const sharedTitle = params.get('title') || '';
 
-  // Extract Instagram URL from any of the params
+  // Extract Instagram or YouTube URL from any of the params
   let url = '';
   [sharedUrl, sharedText].forEach(val => {
     if (!url) {
-      const match = val.match(/(https?:\/\/(?:www\.)?instagram\.com\/\S+)/i);
+      const match = val.match(/(https?:\/\/(?:www\.)?(?:instagram\.com|youtube\.com|youtu\.be)\/\S+)/i);
       if (match) url = match[1];
     }
   });

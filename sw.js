@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reels-library-v1';
+const CACHE_NAME = 'reels-library-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -31,8 +31,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Let Instagram embeds go straight to network
-  if (url.hostname.includes('instagram.com') || url.hostname.includes('cdninstagram.com')) {
+  // Let Instagram & YouTube embeds go straight to network
+  if (url.hostname.includes('instagram.com') || url.hostname.includes('cdninstagram.com') || url.hostname.includes('youtube.com') || url.hostname.includes('googlevideo.com') || url.hostname.includes('ytimg.com')) {
     return;
   }
 

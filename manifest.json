@@ -1,7 +1,7 @@
 {
   "name": "Reels Library",
   "short_name": "Reels Lib",
-  "description": "Save, categorize and preview your Instagram reels",
+  "description": "Save, categorize and preview your Instagram Reels and YouTube Shorts",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",

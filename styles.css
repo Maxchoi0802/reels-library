@@ -269,6 +269,32 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+}
+
+/* Platform badge (Instagram / YouTube icon) */
+.platform-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.platform-ig {
+  background: rgba(225, 48, 108, 0.85);
+  color: #fff;
+}
+
+.platform-yt {
+  background: rgba(255, 0, 0, 0.85);
+  color: #fff;
 }
 
 .reel-card-thumbnail img {
